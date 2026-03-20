@@ -158,6 +158,8 @@ export default function Command() {
   // prevents revalidation calls from stacking up and producing stale readings.
   useInterval(revalidateTemperature, 3000);
 
+  const lastTitleRef = useRef<string | undefined>(undefined);
+
   const getPinnedTitle = (): string | undefined => {
     switch (pinnedStat) {
       case "cpu":
@@ -191,6 +193,16 @@ export default function Command() {
     }
   };
 
+  // Keep the last valid title visible during revalidation gaps to prevent
+  // the menubar text from flickering blank while usePromise refetches data.
+  const rawTitle = getPinnedTitle();
+  if (pinnedStat === "none" || pinnedStat === undefined) {
+    lastTitleRef.current = undefined;
+  } else if (rawTitle !== undefined) {
+    lastTitleRef.current = rawTitle;
+  }
+  const displayTitle = pinnedStat === "none" ? undefined : (rawTitle ?? lastTitleRef.current);
+
   return (
     <MenuBarExtra
       icon={{
@@ -198,7 +210,7 @@ export default function Command() {
         mask: Image.Mask.RoundedRectangle,
         fallback: "command-icon.png",
       }}
-      title={getPinnedTitle()}
+      title={displayTitle}
       tooltip="System Monitor"
       isLoading={isLoading}
     >
